@@ -1,0 +1,92 @@
+2. Goals (MVP) 
+●	Employees log time per project per date 
+●	Project names validated against Google Sheet master list 
+●	Only 0.5 or 1 day allowed per entry 
+●	System prevents >1 day total per date per employee ● Admin can view totals by: 
+○ Employee 
+○ Project 
+●	All data stored in Google Sheets 
+●	Users only see their own entries 
+  
+3. User Roles 
+3.1 Employee 
+Can: 
+●	Login 
+●	Submit time entry 
+●	View their past submissions Cannot: 
+●	Edit past entries 
+●	See other employees’ data 3.2 Admin 
+Can: 
+●	View all entries 
+●	Filter by employee 
+●	Filter by project 
+●	Filter by date 
+●	See total days per employee 
+●	See total days per project 
+  
+4. Core Features 
+  
+4.1 Authentication 
+Option (developer choice based on simplicity): 
+●	Google OAuth login 
+OR 
+●	Simple email + password system 
+Each user has: 
+●	Unique account 
+●	Role (Employee or Admin) 
+  
+4.2 Project Validation 
+●	Master project list stored in Google Sheet (Click here for link) ● Tool pulls project names dynamically from that sheet ● On entry: 
+○ User pastes or types project name 
+○ System shows dropdown suggestion 
+○ Submission allowed only if project exists in master list 
+●	No automatic hiding of inactive projects 
+  
+4.3 Time Entry Rules 
+Input Fields 
+●	Project Name (validated dropdown) 
+●	Date (default = today, editable) 
+●	Time Spent (only options: 0.5 or 1) 
+●	Submit button 
+Constraints 
+●	User can submit multiple entries per day ● Total per date per user cannot exceed 1 day ● If total exceeds 1: 
+○ Show error message 
+○ Block submission 
+Example: 
+●	User logs 0.5 → allowed 
+●	Logs another 0.5 → allowed 
+●	Logs 1 → blocked 
+  
+4.4 Submission Tracking 
+System tracks: 
+●	How many submissions each user made in last 7 days 
+●	Whether user has logged 1 full day for each working day 
+Admin view should show: 
+●	Employee 
+●	Days logged (last 7 days) 
+●	Total days logged (selected date range) 
+  
+4.5 Data Storage 
+All time entries stored in Google Sheet. 
+Structure example: 
+TimeEntries Sheet: 
+●	Entry ID 
+●	User Email 
+●	Project Name 
+●	Date 
+●	Time Value (0.5 or 1) 
+●	Timestamp 
+Projects Sheet: 
+●	Project Name (single column master list) 
+  
+5. Admin Dashboard (Simple Table UI) 
+View 1: Raw Entries 
+Filter by: 
+●	Date range 
+●	Employee 
+●	Project 
+View 2: Aggregated View 
+Show: 
+●	Total days per employee 
+●	Total days per project 
+No charts required in MVP. Simple table is sufficient. 
