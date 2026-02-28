@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, Plus, Clock } from "lucide-react";
+import { CalendarIcon, Loader2, Plus, Clock, Check, ChevronsUpDown } from "lucide-react";
 import { insertTimeEntrySchema } from "@shared/schema";
 import { useProjects } from "@/hooks/use-projects";
 import { useTimeEntries, useCreateTimeEntry } from "@/hooks/use-time-entries";
@@ -32,6 +32,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -55,7 +63,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: entries, isLoading: entriesLoading } = useTimeEntries();
-  const { mutateAsync: createEntry, isPending: isCreating } = useCreateTimeEntry();
+  const { mutateAsync: createEntry, isPending: isSaving } = useCreateTimeEntry();
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(insertTimeEntrySchema),
@@ -100,7 +108,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 pb-10">
       <div>
-        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Welcome back, {user?.username.split('@')[0]}</h1>
+        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Welcome back, {user?.username?.split('@')[0] || 'User'}</h1>
         <p className="text-muted-foreground mt-1 text-lg">Log your hours and view your recent activity.</p>
       </div>
 
@@ -123,28 +131,59 @@ export default function DashboardPage() {
                   control={form.control}
                   name="projectId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel className="text-foreground/80 font-medium">Project</FormLabel>
-                      <Select 
-                        onValueChange={(val) => field.onChange(parseInt(val, 10))} 
-                        value={field.value?.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-11 rounded-xl">
-                            <SelectValue placeholder="Select a project" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="rounded-xl">
-                          {activeProjects.map((project) => (
-                            <SelectItem key={project.id} value={project.id.toString()} className="rounded-lg my-1">
-                              {project.name}
-                            </SelectItem>
-                          ))}
-                          {activeProjects.length === 0 && (
-                            <div className="p-2 text-sm text-muted-foreground text-center">No active projects available.</div>
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={`h-11 rounded-xl justify-between font-normal w-full ${!field.value && "text-muted-foreground"}`}
+                            >
+                              <span className="truncate">
+                                {field.value
+                                  ? activeProjects.find(
+                                    (project) => project.id === field.value
+                                  )?.name
+                                  : "Select project from list..."}
+                              </span>
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] sm:w-[400px] p-0 rounded-xl" align="start">
+                          <Command className="rounded-xl">
+                            <CommandInput placeholder="Search project..." className="h-11" />
+                            <CommandList>
+                              <CommandEmpty>No project found.</CommandEmpty>
+                              <CommandGroup className="max-h-64 overflow-auto">
+                                {activeProjects.length === 0 ? (
+                                  <div className="p-4 text-sm text-muted-foreground text-center">
+                                    No active projects found. Please check your Google Sheet.
+                                  </div>
+                                ) : (
+                                  activeProjects.map((project) => (
+                                    <CommandItem
+                                      key={project.id}
+                                      value={project.name}
+                                      onSelect={() => {
+                                        field.onChange(project.id);
+                                      }}
+                                      className="rounded-lg cursor-pointer py-2.5 px-3 aria-selected:bg-primary/10"
+                                    >
+                                      <Check
+                                        className={`mr-2 h-4 w-4 text-primary ${project.id === field.value ? "opacity-100" : "opacity-0"}`}
+                                      />
+                                      {project.name}
+                                    </CommandItem>
+                                  ))
+                                )}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -180,7 +219,7 @@ export default function DashboardPage() {
                               if (date) {
                                 // Adjust to local timezone string format YYYY-MM-DD
                                 const offset = date.getTimezoneOffset()
-                                const localDate = new Date(date.getTime() - (offset*60*1000))
+                                const localDate = new Date(date.getTime() - (offset * 60 * 1000))
                                 field.onChange(localDate.toISOString().split('T')[0])
                               }
                             }}
@@ -202,8 +241,8 @@ export default function DashboardPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/80 font-medium">Time Spent</FormLabel>
-                      <Select 
-                        onValueChange={(val) => field.onChange(parseFloat(val))} 
+                      <Select
+                        onValueChange={(val) => field.onChange(parseFloat(val))}
                         value={field.value?.toString()}
                       >
                         <FormControl>
@@ -221,12 +260,12 @@ export default function DashboardPage() {
                   )}
                 />
 
-                <Button 
-                  type="submit" 
-                  disabled={isCreating}
+                <Button
+                  type="submit"
+                  disabled={isSaving}
                   className="w-full h-11 rounded-xl font-semibold shadow-md hover-elevate active-elevate-2 mt-2"
                 >
-                  {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Entry
                 </Button>
               </form>
@@ -281,7 +320,7 @@ export default function DashboardPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge 
+                          <Badge
                             variant={Number(entry.timeSpent) === 1 ? "default" : "secondary"}
                             className="font-mono"
                           >
